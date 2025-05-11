@@ -3,6 +3,54 @@ import shlex
 from typing import Any, Callable, Dict, List, Tuple, Union
 
 from . import errors
+from .utils import DataHolder
+
+
+def convert_value(
+        value: str,
+        type_: Any,
+        Trues: Union[List[str], Tuple[str], str] = DataHolder.Trues,
+        Falses: Union[List[str], Tuple[str], str] = DataHolder.Falses
+) -> Any:
+    """
+    Converts a value to the specified type.
+
+    Parameters
+    ----------
+    value : str
+        The value to convert.
+    type_ : Any
+        The type to convert the value to.
+    Trues : Union[List[str], Tuple[str], str]
+        A list or tuple of strings to interpret as True.
+    Falses : Union[List[str], Tuple[str], str]
+        A list or tuple of strings to interpret as False.
+
+    Returns
+    -------
+    Any
+        The converted value.
+    """
+    if type_ == str:
+        return str(value)
+    elif type_ == int:
+        return int(value)
+    elif type_ == float:
+        return float(value)
+    elif type_ == bool:
+        if isinstance(Trues, str):
+            Trues = [Trues]
+        if isinstance(Falses, str):
+            Falses = [Falses]
+
+        if value in Trues:
+            return True
+        elif value in Falses:
+            return False
+        else:
+            raise ValueError(f"Cannot convert '{value}' to bool.")
+    else:
+        raise TypeError(f"Unsupported type: {type_}")
 
 
 def get_command_and_args(text: str, prefixes: Union[List[str], Tuple[str], str]) -> Tuple[str, str]:
@@ -115,7 +163,10 @@ def parse_command(
                 if param.annotation != inspect._empty:
                     try:
                         if param.annotation != Any:
-                            arg = param.annotation(arg)
+                            arg = convert_value(
+                                arg,
+                                param.annotation
+                            )
                     except ValueError:
                         raise errors.ArgumentTypeError(
                             name=name,
@@ -179,21 +230,15 @@ def parse_command(
 
 
 if __name__ == '__main__':
-    def func(message: ..., user: str, ban_time: int = 120, *, reason: str):
-        print('---')
-        print(user)
-        print('---')
-        print(ban_time)
-        print('---')
-        print(reason)
-        print('---')
+    def func(strint, integer: int, boolean: bool, float_: float = 0.0, *, text):
+        print('strint:', strint, type(strint))
+        print('integer:', integer, type(integer))
+        print('boolean:', boolean, type(boolean))
+        print('float_:', float_, type(float_))
+        print('text:', text, type(text))
 
-        print(type(user))
-        print(type(ban_time))
-        print(type(reason))
-
-    args = 'Notch -1 X-Ray'
+    args = 'DogiFnf 123 true 1.0 hello world'
 
     result_args, result_kwargs = parse_command(func, args)
     print(result_args, result_kwargs)
-    func(..., *result_args, **result_kwargs)
+    func(*result_args, **result_kwargs)

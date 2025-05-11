@@ -2,7 +2,7 @@
 from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar, Union
 
 from pyrogram import Client
-from pyrogram.filters import Filter, command, create
+from pyrogram.filters import Filter, command, all
 from pyrogram.handlers import MessageHandler
 
 from . import errors
@@ -54,14 +54,18 @@ class PyroArgs:
         aliases: List[str] = None,
         command_meta_data: Any = None,
         category: str = 'General',
-        filters: Filter = create(lambda *_: True),
+        filters: Filter = None,
         group: int = 0
     ) -> Callable[[F], F]:
         def decorator(func: F) -> F:
             # ** Параметры команды **
             command_name = name or func.__name__
             command_aliases = aliases or []
-            all_names = [command_name, *command_aliases]
+            __all_names__ = [command_name, *command_aliases]
+            if self.bot.me.is_bot:
+                all_names = __all_names__ + [f'{cmd}@{self.bot.me.username}' for cmd in __all_names__]
+            else:
+                all_names = __all_names__
 
             # ** Обработчик команды **
             async def handler(client: Client, message: Message) -> None:
@@ -69,7 +73,7 @@ class PyroArgs:
 
                 # ** Парсинг команды **
                 cmd_text = message.text or message.caption
-                cmd, args = get_command_and_args(cmd_text, self.prefixes)
+                _, args = get_command_and_args(cmd_text, self.prefixes)
 
                 # ** Проверка прав **
                 if not await self.__has_permission(
@@ -97,10 +101,10 @@ class PyroArgs:
             self.__register_command(
                 handler,
                 all_names,
-                filters,
+                filters or all,
                 group,
                 command_name,
-                description,
+                description or func.__doc__,
                 usage,
                 example,
                 permissions_level,

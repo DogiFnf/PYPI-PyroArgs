@@ -50,7 +50,7 @@ def convert_value(
         else:
             raise ValueError(f"Cannot convert '{value}' to bool.")
     else:
-        raise TypeError(f"Unsupported type: {type_}")
+        raise TypeError(f'Unsupported type: {type_}')
 
 
 def get_command_and_args(text: str, prefixes: Union[List[str], Tuple[str], str]) -> Tuple[str, str]:
